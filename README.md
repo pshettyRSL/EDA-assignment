@@ -1,0 +1,7 @@
+### How an event flows through the system:
+
+- Event Creation (Producer side): A client sends a POST /api/orders request with order details. The OrderController receives the payload and passes it to OrderProducerService, which wraps it in an immutable OrderPlacedEvent containing a unique eventId (UUID), eventType ("OrderPlaced"), timestamp (UTC), and the OrderPayload.
+- Event Publishing: The OrderProducerService publishes the event to the Kafka topic order-placed-topic using KafkaTemplate.send(). The orderId is used as the message key to ensure partition-level ordering for the same order.
+- Event Brokering (Kafka): Kafka persists the message across 3 partitions. Two consumer groups are independently subscribed, each maintaining their own offset. This is the Pub/Sub pattern i.e every consumer group receives every message.
+- Event Consumption — Notification Service: The NotificationConsumer (group: notification-consumer-group) receives the event and simulates sending an email confirmation. It processes the event and logs the action.
+- Event Consumption — Analytics Service: The AnalyticsConsumer (group: analytics-consumer-group) receives the same event independently. Before processing, it checks its idempotency store (processed_events table) for the eventId. If found, it skips processing entirely. If not found, it processes the event and records the eventId to prevent future duplicates.

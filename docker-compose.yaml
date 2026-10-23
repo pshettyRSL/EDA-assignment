@@ -1,0 +1,39 @@
+services:
+  kafka:
+    image: apache/kafka:latest          # Official Apache Kafka image
+    container_name: kafka-broker
+    ports:
+      - "9092:9092"                     # Client connections
+    environment:
+      # ──── KRaft Mode Configuration ────
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'           # Combined mode (single-node)
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@localhost:9093'  # Self-elect as controller
+
+      # ──── Listener Configuration ────
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://localhost:9092'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT'
+
+      # ──── Cluster & Replication (single-node safe defaults) ────
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'              # Fixed ID for reproducible restarts
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+      # ──── Performance Tuning ────
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0           # No delay for dev (faster consumer startup)
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+#    volumes:
+#      - kafka-data:/tmp/kraft-combined-logs               # Persist data across container restarts
+    healthcheck:
+      test: /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+#volumes:
+#  kafka-data:
+#    driver: local
