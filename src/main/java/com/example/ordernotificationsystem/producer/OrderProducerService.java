@@ -18,7 +18,7 @@ public class OrderProducerService {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    public void publishOrder(@RequestBody OrderPlacedEvent event) {
+    public void publishOrder(OrderPlacedEvent event) {
         kafkaTemplate.send(KafkaTopicConfig.ORDER_PLACED_TOPIC, event.payload().orderId(), event);
         log.info("[PRODUCER] Event published successfully to topic '{}'", KafkaTopicConfig.ORDER_PLACED_TOPIC);
     }
